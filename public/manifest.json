@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "BitBrake",
+  "version": "0.1.0",
+  "description": "투자 충동을 멈추는 브레이크 확장 프로그램",
+  "permissions": ["sidePanel", "storage"],
+  "host_permissions": [
+    "https://upbit.com/*",
+    "https://*.upbit.com/*",
+    "https://api.upbit.com/*",
+    "wss://api.upbit.com/*"
+  ],
+  "action": {
+    "default_title": "BitBrake 열기"
+  },
+  "side_panel": {
+    "default_path": "src/extension/side-panel.html"
+  },
+  "background": {
+    "service_worker": "assets/service-worker.js",
+    "type": "module"
+  }
+}

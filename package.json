@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173 --open",
-    "build": "vite build",
+    "build": "node scripts/build.mjs",
+    "build:extension": "node scripts/build-extension.mjs",
     "preview": "vite preview",
     "lint": "eslint ."
   },

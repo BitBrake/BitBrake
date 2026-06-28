@@ -64,19 +64,16 @@ export default function AnalysisPage({
   asset,
   onScoreChange,
   onPriceChange,
-  onNext,
 }: {
   asset: SelectedAsset;
   onScoreChange: (score: number) => void;
   onPriceChange: (price: number) => void;
-  onNext: () => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const score = analysis?.fomoScore ?? 0;
   const meta = fomoMeta(score);
@@ -86,7 +83,6 @@ export default function AnalysisPage({
     setIsLoading(true);
     setIsAiLoading(false);
     setAiSummary(null);
-    setAiError(null);
     setError(null);
     try {
       const data = await fetchMarketAnalysis(asset.marketCode, asset.market, asset.name, asset.symbol);
@@ -109,8 +105,8 @@ export default function AnalysisPage({
         });
 
         setAiSummary(summary);
-      } catch (aiErr) {
-        setAiError(aiErr instanceof Error ? aiErr.message : "Gemini 분석 결과를 불러오지 못했습니다.");
+      } catch {
+        setAiSummary(null);
       } finally {
         setIsAiLoading(false);
       }
@@ -160,7 +156,7 @@ export default function AnalysisPage({
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 80 }}>
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 24 }}>
         {/* FOMO card */}
         <div
           className="mx-4 mt-4 rounded-2xl border-2 p-4"
@@ -247,11 +243,6 @@ export default function AnalysisPage({
                 </p>
                 ))}
               </div>
-            )}
-            {aiError && (
-              <p className="mt-3 text-[11px] text-gray-400">
-                Gemini 연결에 실패해 기본 분석을 표시했습니다.
-              </p>
             )}
           </div>
         )}
@@ -345,18 +336,6 @@ export default function AnalysisPage({
         )}
       </div>
 
-      {/* Sticky CTA */}
-      <div
-        className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-3 bg-white border-t border-gray-100"
-      >
-        <button
-          onClick={onNext}
-          className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-md active:scale-[0.98] transition-transform"
-          style={{ background: BLUE }}
-        >
-          확인 후 계속 진행
-        </button>
-      </div>
     </div>
   );
 }
