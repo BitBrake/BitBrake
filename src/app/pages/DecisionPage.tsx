@@ -46,7 +46,7 @@ export default function DecisionPage({
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col px-5 py-5 gap-4">
+      <div className="flex-1 flex flex-col justify-center px-5 py-8 gap-4">
         <div className="text-center">
           <p className="text-gray-400 text-sm">분석 결과를 확인했습니다</p>
           <h2 className="text-xl font-bold text-gray-900 mt-1">
