@@ -2,4 +2,4 @@
 @import 'tw-animate-css';
 
 @source '../main.tsx';
-@source '../app/App.tsx';
+@source '../app/**/*.{ts,tsx}';
