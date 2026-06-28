@@ -1,12 +1,64 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Activity, AlertTriangle, BarChart2, ChevronDown, ChevronUp, RefreshCw, Zap } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart2,
+  ChevronDown,
+  ChevronUp,
+  Frown,
+  Newspaper,
+  RefreshCw,
+  Smile,
+  Zap,
+} from "lucide-react";
 import { fetchGeminiSummary } from "../api/gemini";
 import { fetchMarketAnalysis, type MarketAnalysis } from "../api/upbit";
 import CoinBadge from "../components/CoinBadge";
 import { BLUE } from "../constants/coins";
 import { fomoMeta } from "../utils/fomo";
 import type { SelectedAsset } from "../types";
+
+const MOCK_NEWS_SENTIMENTS = [
+  {
+    tone: "mixed",
+    positiveWords: ["반등", "기관 관심", "거래대금 증가"],
+    negativeWords: ["변동성", "차익 실현", "단기 과열"],
+    headlines: [
+      "최근 가상자산 시장, 주요 종목 중심으로 거래 관심 확대",
+      "단기 상승 이후 일부 투자자 차익 실현 움직임 관찰",
+      "시장 전문가들, 변동성 확대 구간에서는 신중한 접근 필요",
+    ],
+    summary: "최근 뉴스 흐름은 기대감과 경계감이 함께 섞여 있습니다. 가격 움직임만 보고 따라가기보다 뉴스가 이미 가격에 반영됐는지 확인해보세요.",
+  },
+  {
+    tone: "positive",
+    positiveWords: ["수급 개선", "긍정 전망", "시장 회복"],
+    negativeWords: ["되돌림", "관망", "불확실성"],
+    headlines: [
+      "가상자산 투자 심리 회복 조짐, 주요 종목 거래량 증가",
+      "시장 회복 기대감 속 일부 종목 강세 흐름",
+      "단기 상승세에도 변동성 관리 필요하다는 의견 이어져",
+    ],
+    summary: "뉴스에서는 회복 기대감이 보이지만, 단기 상승 뒤에는 되돌림 가능성도 함께 확인할 필요가 있습니다.",
+  },
+  {
+    tone: "cautious",
+    positiveWords: ["관심 증가", "거래 활성", "저가 매수"],
+    negativeWords: ["규제 우려", "급등락", "심리 위축"],
+    headlines: [
+      "가상자산 시장, 규제 이슈와 가격 변동성에 투자자 주목",
+      "급등락 반복에 단기 투자 심리 흔들림",
+      "거래 활성화에도 위험 관리 중요성 커져",
+    ],
+    summary: "뉴스 흐름은 다소 조심스러운 분위기입니다. 급하게 판단하기보다 가격, 거래량, 뉴스 배경을 함께 보는 것이 좋습니다.",
+  },
+];
+
+function getMockNewsSentiment(symbol: string) {
+  const seed = symbol.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return MOCK_NEWS_SENTIMENTS[seed % MOCK_NEWS_SENTIMENTS.length];
+}
 
 export default function AnalysisPage({
   asset,
@@ -28,6 +80,7 @@ export default function AnalysisPage({
   const [error, setError] = useState<string | null>(null);
   const score = analysis?.fomoScore ?? 0;
   const meta = fomoMeta(score);
+  const newsSentiment = getMockNewsSentiment(asset.symbol);
 
   const loadAnalysis = async () => {
     setIsLoading(true);
@@ -200,6 +253,55 @@ export default function AnalysisPage({
                 Gemini 연결에 실패해 기본 분석을 표시했습니다.
               </p>
             )}
+          </div>
+        )}
+
+        {/* News sentiment mock */}
+        {analysis && (
+          <div className="mx-4 mt-3 rounded-2xl bg-white border border-gray-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50" style={{ color: BLUE }}>
+                <Newspaper size={16} />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-gray-900">뉴스 분위기</p>
+                <p className="text-[11px] text-gray-400">최근 관련 기사 키워드 요약</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-green-50 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 text-green-600">
+                  <Smile size={14} />
+                  <span className="text-xs font-bold">긍정어</span>
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-green-700">
+                  {newsSentiment.positiveWords.join(" · ")}
+                </p>
+              </div>
+              <div className="rounded-xl bg-red-50 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 text-red-500">
+                  <Frown size={14} />
+                  <span className="text-xs font-bold">부정어</span>
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-red-600">
+                  {newsSentiment.negativeWords.join(" · ")}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {newsSentiment.headlines.map((headline) => (
+                <div key={headline} className="flex gap-2 text-xs text-gray-600 leading-relaxed">
+                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-gray-300 shrink-0" />
+                  <span>{headline}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-3 rounded-xl bg-gray-50 px-3 py-2.5 text-xs text-gray-600 leading-relaxed">
+              {newsSentiment.summary}
+            </p>
           </div>
         )}
 
