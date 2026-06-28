@@ -1,5 +1,7 @@
 import type { MarketAnalysis } from "./upbit";
 
+const GEMINI_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://bitbrake.vercel.app").replace(/\/$/, "");
+
 export type GeminiSummaryInput = Pick<
   MarketAnalysis,
   | "currentPrice"
@@ -14,7 +16,7 @@ export type GeminiSummaryInput = Pick<
 };
 
 export async function fetchGeminiSummary(input: GeminiSummaryInput) {
-  const response = await fetch("/api/gemini-summary", {
+  const response = await fetch(`${GEMINI_API_BASE_URL}/api/gemini-summary`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
