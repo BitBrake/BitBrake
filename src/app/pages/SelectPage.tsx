@@ -43,9 +43,10 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   };
 
   const handleMarketChange = (nextMarket: Market) => {
-    setMarket(nextMarket);
     const nextCoins = getMarketCoins(nextMarket);
     const nextCoin = COINS[coin].markets.includes(nextMarket) ? coin : nextCoins[0];
+
+    setMarket(nextMarket);
     setCoin(nextCoin);
     setPriceInput(fmtMarketPrice(getDisplayPrice(nextCoin, nextMarket), nextMarket));
     setQtyInput("");
@@ -54,6 +55,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   const handleCoinChange = (nextCoin: Coin) => {
     setCoin(nextCoin);
     setPriceInput(fmtMarketPrice(getDisplayPrice(nextCoin), market));
+    setQtyInput("");
     setShowCoinSheet(false);
   };
 
@@ -291,7 +293,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
           확인 후 {isBuy ? "매수" : "매도"} 주문 검토하기
         </button>
         <p className="text-center text-[11px] text-gray-400 mt-2">
-          주문 전 20초 브레이크 타임이 시작됩니다
+          주문 전 10초 브레이크 타임이 시작됩니다
         </p>
       </div>
 

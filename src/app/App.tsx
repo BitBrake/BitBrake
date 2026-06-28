@@ -6,10 +6,12 @@ import DecisionPage from "./pages/DecisionPage";
 import { calcFomo } from "./utils/fomo";
 import type { Coin, Page } from "./types";
 
+const BREAK_SECONDS = 10;
+
 export default function App() {
   const [page, setPage] = useState<Page>("select");
   const [coin, setCoin] = useState<Coin>("BTC");
-  const [countdown, setCountdown] = useState(20);
+  const [countdown, setCountdown] = useState(BREAK_SECONDS);
 
   useEffect(() => {
     if (page !== "break") return;
@@ -23,7 +25,7 @@ export default function App() {
 
   function handleSelect(c: Coin) {
     setCoin(c);
-    setCountdown(20);
+    setCountdown(BREAK_SECONDS);
     setPage("break");
   }
 
