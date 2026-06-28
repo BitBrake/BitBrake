@@ -1,6 +1,6 @@
 import type { Coin } from '../types';
 
-export default function CoinBadge({ symbol, size = 36 }: { symbol: Coin; size?: number }) {
+export default function CoinBadge({ symbol, size = 36 }: { symbol: string; size?: number }) {
   const cfg: Record<Coin, { bg: string; label: string }> = {
     BTC: { bg: "#f7931a", label: "B" },
     ETH: { bg: "#627eea", label: "E" },
@@ -14,7 +14,7 @@ export default function CoinBadge({ symbol, size = 36 }: { symbol: Coin; size?: 
     SEI: { bg: "#b91c1c", label: "S" },
     SXT: { bg: "#111827", label: "S" },
   };
-  const c = cfg[symbol];
+  const c = cfg[symbol as Coin] ?? { bg: "#6b7280", label: symbol.slice(0, 1) || "?" };
   return (
     <div
       style={{ width: size, height: size, background: c.bg, fontSize: size * 0.4 }}

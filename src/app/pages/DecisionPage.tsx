@@ -3,30 +3,28 @@ import { motion } from "motion/react";
 import { Home } from "lucide-react";
 import BrakePedal2 from "../components/BrakePedal2";
 import AccelPedal from "../components/AccelPedal";
-import { BLUE, COINS } from "../constants/coins";
+import { BLUE } from "../constants/coins";
 import { fmtMarketPrice } from "../utils/format";
-import type { Coin, Market } from "../types";
+import type { SelectedAsset } from "../types";
 
 const RED = "#ef4444";
 const GREEN = "#16a34a";
 
 export default function DecisionPage({
-  coin,
-  market,
+  asset,
   currentPrice,
   score,
   onBrake,
   onAccel,
 }: {
-  coin: Coin;
-  market: Market;
+  asset: SelectedAsset;
   currentPrice: number;
   score: number;
   onBrake: () => void;
   onAccel: () => void;
 }) {
   const [popup, setPopup] = useState<"brake" | "accel" | null>(null);
-  const formattedPrice = currentPrice > 0 ? fmtMarketPrice(currentPrice, market) : "-";
+  const formattedPrice = currentPrice > 0 ? fmtMarketPrice(currentPrice, asset.market) : "-";
 
   function pick(choice: "brake" | "accel") {
     if (choice === "brake") {
@@ -44,7 +42,7 @@ export default function DecisionPage({
       <div style={{ background: BLUE }} className="px-4 py-3 flex-shrink-0">
         <p className="text-white font-bold text-base">최종 결정</p>
         <p className="text-white/60 text-[11px]">
-          {COINS[coin].name}
+          {asset.name}
         </p>
       </div>
 
@@ -63,12 +61,12 @@ export default function DecisionPage({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-500">종목명</span>
-              <span className="text-sm font-bold text-gray-900">{COINS[coin].name}</span>
+              <span className="text-sm font-bold text-gray-900">{asset.name}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-500">업비트 현재가</span>
               <span className="text-sm font-bold text-gray-900">
-                {formattedPrice} {market}
+                {formattedPrice} {asset.market}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -146,9 +144,9 @@ export default function DecisionPage({
               <>
                 <p className="text-lg font-bold text-gray-900">매수 성공!</p>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                  {formattedPrice} {market}에
+                  {formattedPrice} {asset.market}에
                   <br />
-                  {COINS[coin].name} 매수를 진행했습니다.
+                  {asset.name} 매수를 진행했습니다.
                 </p>
               </>
             ) : (

@@ -2,6 +2,14 @@ export type Page = "select" | "break" | "analysis" | "decision";
 export type Market = "KRW" | "BTC" | "USDT";
 export type Coin = "BTC" | "ETH" | "XRP" | "SOL" | "SUI" | "DOGE" | "ADA" | "AVAX" | "LINK" | "SEI" | "SXT";
 
+export type SelectedAsset = {
+  marketCode: string;
+  market: Market;
+  symbol: string;
+  name: string;
+  englishName?: string;
+};
+
 export type CoinInfo = {
   name: string;
   symbol: Coin;

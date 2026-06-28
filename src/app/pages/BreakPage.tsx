@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "motion/react";
-import { BLUE, COINS } from "../constants/coins";
-import type { Coin } from "../types";
+import { BLUE } from "../constants/coins";
+import type { SelectedAsset } from "../types";
 
 const REFLECTIONS = [
   "이 투자가 나의 재정 계획에 맞나요?",
@@ -16,11 +16,11 @@ const REFLECTIONS = [
 ];
 
 export default function BreakPage({
-  coin,
+  asset,
   countdown,
   onSkip,
 }: {
-  coin: Coin;
+  asset: SelectedAsset;
   countdown: number;
   onSkip: () => void;
 }) {
@@ -39,7 +39,7 @@ export default function BreakPage({
           className="text-white text-xs px-2 py-0.5 rounded-full font-medium"
           style={{ background: "rgba(255,255,255,0.18)" }}
         >
-          {COINS[coin].name}
+          {asset.name}
         </span>
       </div>
 

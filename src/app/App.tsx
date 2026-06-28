@@ -3,17 +3,21 @@ import SelectPage from "./pages/SelectPage";
 import BreakPage from "./pages/BreakPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import DecisionPage from "./pages/DecisionPage";
-import type { Coin, Market, Page } from "./types";
+import type { Page, SelectedAsset } from "./types";
 
 const BREAK_SECONDS = 10;
 
 export default function App() {
   const [page, setPage] = useState<Page>("select");
-  const [coin, setCoin] = useState<Coin>("BTC");
+  const [asset, setAsset] = useState<SelectedAsset>({
+    marketCode: "KRW-BTC",
+    market: "KRW",
+    symbol: "BTC",
+    name: "비트코인",
+  });
   const [fomoScore, setFomoScore] = useState(0);
   const [currentPrice, setCurrentPrice] = useState(0);
   const [countdown, setCountdown] = useState(BREAK_SECONDS);
-  const market: Market = "KRW";
 
   useEffect(() => {
     if (page !== "break") return;
@@ -25,8 +29,8 @@ export default function App() {
     return () => clearTimeout(t);
   }, [page, countdown]);
 
-  function handleSelect(c: Coin) {
-    setCoin(c);
+  function handleSelect(nextAsset: SelectedAsset) {
+    setAsset(nextAsset);
     setFomoScore(0);
     setCurrentPrice(0);
     setCountdown(BREAK_SECONDS);
@@ -48,14 +52,14 @@ export default function App() {
           {page === "select" && <SelectPage onSelect={handleSelect} />}
           {page === "break" && (
             <BreakPage
-              coin={coin}
+              asset={asset}
               countdown={countdown}
               onSkip={() => setPage("analysis")}
             />
           )}
           {page === "analysis" && (
             <AnalysisPage
-              coin={coin}
+              asset={asset}
               onScoreChange={setFomoScore}
               onPriceChange={setCurrentPrice}
               onNext={() => setPage("decision")}
@@ -63,16 +67,13 @@ export default function App() {
           )}
           {page === "decision" && (
             <DecisionPage
-              coin={coin}
-              market={market}
+              asset={asset}
               currentPrice={currentPrice}
               score={fomoScore}
               onBrake={() => {
-                setCoin("BTC");
                 setPage("select");
               }}
               onAccel={() => {
-                setCoin("BTC");
                 setPage("select");
               }}
             />

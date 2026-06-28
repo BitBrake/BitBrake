@@ -1,4 +1,4 @@
-import type { Coin, Market } from "../types";
+import type { Market } from "../types";
 
 const UPBIT_BASE_URL = "https://api.upbit.com/v1";
 
@@ -17,7 +17,7 @@ export type UpbitTickerMessage = {
 export type LiveTicker = {
   code: string;
   market: Market;
-  coin: Coin;
+  coin: string;
   tradePrice: number;
   changeRate: number;
   accTradePrice24h: number;
@@ -84,7 +84,7 @@ export type MarketAnalysis = {
   aiAnalysis: string[];
 };
 
-export function toUpbitCode(market: Market, coin: Coin) {
+export function toUpbitCode(market: Market, coin: string) {
   return `${market}-${coin}`;
 }
 
@@ -188,8 +188,13 @@ function buildAnalysisLines(data: Omit<MarketAnalysis, "aiAnalysis" | "factors">
   ];
 }
 
-export async function fetchMarketAnalysis(coin: Coin, market: Market, marketName: string): Promise<MarketAnalysis> {
-  const code = toUpbitCode(market, coin);
+export async function fetchMarketAnalysis(
+  marketCode: string,
+  market: Market,
+  marketName: string,
+  symbol: string
+): Promise<MarketAnalysis> {
+  const code = marketCode;
   const [minuteCandlesDesc, dayCandles, tickers] = await Promise.all([
     fetchUpbit<UpbitMinuteCandle[]>("/candles/minutes/1", { market: code, count: 15 }),
     fetchUpbit<UpbitDayCandle[]>("/candles/days", { market: code, count: 7 }),
@@ -265,9 +270,9 @@ export async function fetchMarketAnalysis(coin: Coin, market: Market, marketName
         value: ratio(volumeSpikeRate),
         score: volumeScore,
         up: volumeSpikeRate >= 1,
-        detail: `최근 15분 거래량은 ${recentVolume.toFixed(4)} ${coin}이고, 7일 일평균을 15분 단위로 나눈 기준은 ${averageVolume15m.toFixed(
+        detail: `최근 15분 거래량은 ${recentVolume.toFixed(4)} ${symbol}이고, 7일 일평균을 15분 단위로 나눈 기준은 ${averageVolume15m.toFixed(
           4
-        )} ${coin}입니다.`,
+        )} ${symbol}입니다.`,
       },
       {
         id: "volatility",

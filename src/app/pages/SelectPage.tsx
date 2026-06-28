@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Check, ChevronDown } from "lucide-react";
 import { BLUE, COINS, MARKET_LIST, ORDER_TYPES } from "../constants/coins";
-import { fmtMarketPrice, getCoinPrice } from "../utils/format";
-import type { Coin, Market, OrderSide, OrderType } from "../types";
+import { fmtMarketPrice } from "../utils/format";
+import type { Market, OrderSide, OrderType, SelectedAsset } from "../types";
 
 type UpbitMarket = {
   market: string;
@@ -39,7 +39,7 @@ const getMarketFromMarketCode = (marketCode: string) => {
   return marketCode.split("-")[0] as Market;
 };
 
-export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }) {
+export default function SelectPage({ onSelect }: { onSelect: (asset: SelectedAsset) => void }) {
   const [market, setMarket] = useState<Market>("KRW");
   const [side, setSide] = useState<OrderSide>("매수");
   const [selectedMarketCode, setSelectedMarketCode] = useState("KRW-BTC");
@@ -82,11 +82,8 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
 
   const currentTicker = tickers[selectedMarketCode];
 
-  const fallbackPrice = isKnownCoin(selectedSymbol) ? getCoinPrice(selectedSymbol, market) : 0;
-  const fallbackChange = isKnownCoin(selectedSymbol) ? COINS[selectedSymbol].change24h : undefined;
-
-  const currentPrice = currentTicker?.tradePrice ?? fallbackPrice;
-  const currentChange = currentTicker?.changeRate ?? fallbackChange;
+  const currentPrice = currentTicker?.tradePrice ?? 0;
+  const currentChange = currentTicker?.changeRate;
   const currentChangePrice = currentTicker?.signedChangePrice;
 
   const isCurrentMarketSupported = availableCoins.some((item) => item.marketCode === selectedMarketCode);
@@ -214,27 +211,11 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   }, [currentPrice, market, orderType, priceInput]);
 
   const getDisplayPrice = (item: UpbitDisplayCoin) => {
-    const tickerPrice = tickers[item.marketCode]?.tradePrice;
-
-    if (tickerPrice) return tickerPrice;
-
-    if (isKnownCoin(item.symbol)) {
-      return getCoinPrice(item.symbol, market);
-    }
-
-    return 0;
+    return tickers[item.marketCode]?.tradePrice ?? 0;
   };
 
   const getDisplayChange = (item: UpbitDisplayCoin) => {
-    const tickerChange = tickers[item.marketCode]?.changeRate;
-
-    if (tickerChange !== undefined) return tickerChange;
-
-    if (isKnownCoin(item.symbol)) {
-      return COINS[item.symbol].change24h;
-    }
-
-    return undefined;
+    return tickers[item.marketCode]?.changeRate;
   };
 
   const getDisplayChangePrice = (item: UpbitDisplayCoin) => {
@@ -309,7 +290,13 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
       return;
     }
 
-    onSelect(selectedSymbol as Coin);
+    onSelect({
+      marketCode: selectedMarketCode,
+      market,
+      symbol: selectedSymbol,
+      name: selectedName,
+      englishName: selectedCoinInfo?.englishName,
+    });
   };
 
   const renderCoinIcon = (symbol: string, size: number) => {

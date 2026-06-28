@@ -3,17 +3,17 @@ import { motion } from "motion/react";
 import { Activity, AlertTriangle, BarChart2, ChevronDown, ChevronUp, RefreshCw, Zap } from "lucide-react";
 import { fetchMarketAnalysis, type MarketAnalysis } from "../api/upbit";
 import CoinBadge from "../components/CoinBadge";
-import { BLUE, COINS } from "../constants/coins";
+import { BLUE } from "../constants/coins";
 import { fomoMeta } from "../utils/fomo";
-import type { Coin, Market } from "../types";
+import type { SelectedAsset } from "../types";
 
 export default function AnalysisPage({
-  coin,
+  asset,
   onScoreChange,
   onPriceChange,
   onNext,
 }: {
-  coin: Coin;
+  asset: SelectedAsset;
   onScoreChange: (score: number) => void;
   onPriceChange: (price: number) => void;
   onNext: () => void;
@@ -22,8 +22,6 @@ export default function AnalysisPage({
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const c = COINS[coin];
-  const market: Market = "KRW";
   const score = analysis?.fomoScore ?? 0;
   const meta = fomoMeta(score);
 
@@ -31,7 +29,7 @@ export default function AnalysisPage({
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchMarketAnalysis(coin, market, c.name);
+      const data = await fetchMarketAnalysis(asset.marketCode, asset.market, asset.name, asset.symbol);
       setAnalysis(data);
       onScoreChange(data.fomoScore);
       onPriceChange(data.currentPrice);
@@ -47,7 +45,7 @@ export default function AnalysisPage({
 
   useEffect(() => {
     loadAnalysis();
-  }, [coin]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [asset.marketCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const items = analysis
     ? analysis.factors.map((item) => ({
@@ -70,15 +68,15 @@ export default function AnalysisPage({
       {/* Header */}
       <div style={{ background: BLUE }} className="px-4 py-3 flex items-center flex-shrink-0">
         <div className="flex-1">
-          <p className="text-white font-bold text-base">{c.name} 분석</p>
+          <p className="text-white font-bold text-base">{asset.name} 분석</p>
           <p className="text-white/60 text-[11px]">
-            {analysis?.marketCode ?? `${market}-${coin}`} ·{" "}
+            {analysis?.marketCode ?? asset.marketCode} ·{" "}
             {analysis?.updatedAt
               ? `${analysis.updatedAt.slice(11, 16)} 기준 업비트 데이터`
               : "업비트 데이터 확인 중"}
           </p>
         </div>
-        <CoinBadge symbol={coin} size={34} />
+        <CoinBadge symbol={asset.symbol} size={34} />
       </div>
 
       {/* Scrollable body */}
