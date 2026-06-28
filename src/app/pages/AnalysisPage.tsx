@@ -1,93 +1,55 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Activity, AlertTriangle, BarChart2, ChevronDown, Zap } from "lucide-react";
+import { Activity, AlertTriangle, BarChart2, ChevronDown, ChevronUp, RefreshCw, Zap } from "lucide-react";
+import { fetchMarketAnalysis, type MarketAnalysis } from "../api/upbit";
 import CoinBadge from "../components/CoinBadge";
 import { BLUE, COINS } from "../constants/coins";
-import { calcFomo, fomoMeta, genChartData } from "../utils/fomo";
-import { fmtPrice, fmtVol } from "../utils/format";
-import type { Coin } from "../types";
+import { fomoMeta } from "../utils/fomo";
+import type { Coin, Market } from "../types";
+
 export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () => void }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const c = COINS[coin];
-  const score = calcFomo(coin);
+  const market: Market = "KRW";
+  const score = analysis?.fomoScore ?? 0;
   const meta = fomoMeta(score);
 
-  const vol24h = (((c.high24h - c.low24h) / c.low24h) * 100).toFixed(1);
+  const loadAnalysis = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await fetchMarketAnalysis(coin, market, c.name);
+      setAnalysis(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "분석 데이터를 불러오지 못했습니다.");
+      setAnalysis(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const aiLines = useMemo(() => {
-    if (score >= 70)
-      return [
-        `🚨 ${c.name} FOMO 지수가 매우 높습니다. 단기 급등 후 조정 가능성에 주의하세요.`,
-        `📈 1시간 ${c.change1h.toFixed(2)}% 상승, 거래량 ${c.volumeChange.toFixed(0)}% 급증 — 추격 매수 구간으로 판단됩니다.`,
-        `⚠️ 현재가 단기 저항선 근처입니다. 분할 매수 또는 대기를 권장합니다.`,
-      ];
-    if (score >= 50)
-      return [
-        `⚡ ${c.name} FOMO 신호가 감지됩니다. 충동 매수에 주의가 필요합니다.`,
-        `📊 24시간 +${c.change24h.toFixed(2)}% 상승, 거래량 증가세가 확인됩니다.`,
-        `💡 이미 상승이 진행된 상태입니다. 목표가와 손절 라인을 설정 후 진입하세요.`,
-      ];
-    if (score >= 30)
-      return [
-        `📋 ${c.name} 시장 상태가 다소 불안정합니다. 추가 확인 후 진입을 권장합니다.`,
-        `📉 최근 움직임은 제한적이며 큰 변동성은 관찰되지 않습니다.`,
-        `✅ 리스크 관리를 철저히 하면 진입 고려 가능한 구간입니다.`,
-      ];
-    return [
-      `✅ ${c.name} FOMO 신호가 낮습니다. 상대적으로 안정적인 상태입니다.`,
-      `📊 단기 급등 없이 완만한 움직임을 보이고 있습니다.`,
-      `💚 계획에 따른 투자 진행이 가능한 시장 상태입니다.`,
-    ];
-  }, [coin, score]); // eslint-disable-line
+  useEffect(() => {
+    loadAnalysis();
+  }, [coin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const items = [
-    {
-      id: "h1",
-      label: "최근 1시간 상승률",
-      icon: <Activity size={15} />,
-      value: `${c.change1h >= 0 ? "+" : ""}${c.change1h.toFixed(2)}%`,
-      up: c.change1h >= 0,
-      detail: `지난 1시간 동안 ${c.name}의 가격이 ${Math.abs(c.change1h).toFixed(2)}% ${
-        c.change1h >= 0 ? "상승" : "하락"
-      }했습니다. ${
-        Math.abs(c.change1h) > 1
-          ? "단기 급등으로 추격 매수 위험이 있습니다."
-          : "비교적 안정적인 움직임입니다."
-      }`,
-    },
-    {
-      id: "h24",
-      label: "최근 24시간 상승률",
-      icon: <BarChart2 size={15} />,
-      value: `${c.change24h >= 0 ? "+" : ""}${c.change24h.toFixed(2)}%`,
-      up: c.change24h >= 0,
-      detail: `24시간 ${c.change24h >= 0 ? "+" : ""}${c.change24h.toFixed(2)}% 변동. 고가 ${fmtPrice(
-        c.high24h
-      )}원, 저가 ${fmtPrice(c.low24h)}원을 기록했습니다.`,
-    },
-    {
-      id: "vol",
-      label: "거래량 변화",
-      icon: <Zap size={15} />,
-      value: `${c.volumeChange >= 0 ? "+" : ""}${c.volumeChange.toFixed(1)}%`,
-      up: c.volumeChange >= 0,
-      detail: `24시간 거래량이 평균 대비 ${Math.abs(c.volumeChange).toFixed(1)}% ${
-        c.volumeChange >= 0 ? "증가" : "감소"
-      }했습니다. 총 거래대금: ${fmtVol(c.volume)} KRW.${
-        c.volumeChange > 30 ? " 거래량 급증은 FOMO 신호일 수 있습니다." : ""
-      }`,
-    },
-    {
-      id: "vlt",
-      label: "시장 변동성",
-      icon: <AlertTriangle size={15} />,
-      value: `${vol24h}%`,
-      up: false,
-      detail: `고저 스프레드: ${fmtPrice(c.high24h - c.low24h)}원 (${vol24h}%). 매수/매도 비율: ${
-        c.buyRatio
-      }% / ${100 - c.buyRatio}%.${c.buyRatio > 65 ? " 매수 쏠림 현상이 관찰됩니다." : " 균형 잡힌 상태입니다."}`,
-    },
-  ];
+  const items = analysis
+    ? analysis.factors.map((item) => ({
+        ...item,
+        icon:
+          item.id === "shortTerm" ? (
+            <Activity size={15} />
+          ) : item.id === "daily" ? (
+            <BarChart2 size={15} />
+          ) : item.id === "volume" ? (
+            <Zap size={15} />
+          ) : (
+            <AlertTriangle size={15} />
+          ),
+      }))
+    : [];
 
   return (
     <div className="relative flex flex-col h-full bg-white" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -96,7 +58,10 @@ export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () 
         <div className="flex-1">
           <p className="text-white font-bold text-base">{c.name} 분석</p>
           <p className="text-white/60 text-[11px]">
-            {new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 기준 실시간 데이터
+            {analysis?.marketCode ?? `${market}-${coin}`} ·{" "}
+            {analysis?.updatedAt
+              ? `${analysis.updatedAt.slice(11, 16)} 기준 업비트 데이터`
+              : "업비트 데이터 확인 중"}
           </p>
         </div>
         <CoinBadge symbol={coin} size={34} />
@@ -111,21 +76,24 @@ export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () 
         >
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
-                FOMO Attention Signal
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
+                충동 매수 위험도
               </p>
-              <p className="text-lg font-bold" style={{ color: meta.color }}>
+              <p className="text-2xl font-bold" style={{ color: meta.color }}>
                 {meta.emoji} {meta.label}
               </p>
+              {analysis && <p className="text-xs text-gray-500 mt-1 max-w-[220px]">{analysis.fomoMessage}</p>}
             </div>
-            <div className="text-right">
-              <p
-                className="font-extrabold leading-none"
-                style={{ fontSize: 38, color: meta.color, fontFamily: "Inter, sans-serif" }}
-              >
-                {score}
-              </p>
-              <p className="text-xs text-gray-400">/ 100</p>
+            <div className="text-right pt-1.5">
+              <div className="flex items-end justify-end gap-1">
+                <p
+                  className="font-extrabold leading-none"
+                  style={{ fontSize: 50, color: meta.color, fontFamily: "Inter, sans-serif" }}
+                >
+                  {score}
+                </p>
+                <p className="text-xs text-gray-400 leading-none mb-1">/ 100</p>
+              </div>
             </div>
           </div>
           {/* Bar */}
@@ -144,58 +112,84 @@ export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () 
           </div>
         </div>
 
-        {/* AI Analysis */}
-        <div className="mx-4 mt-3 rounded-2xl bg-gray-50 border border-gray-100 p-4">
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest mb-3"
-            style={{ color: BLUE }}
-          >
-            AI 분석 결과
-          </p>
-          <div className="space-y-2.5">
-            {aiLines.map((line, i) => (
-              <p key={i} className="text-sm text-gray-700 leading-relaxed">
-                {line}
-              </p>
-            ))}
+        {isLoading && (
+          <div className="mx-4 mt-3 rounded-2xl bg-gray-50 border border-gray-100 p-4">
+            <p className="text-sm font-semibold text-gray-700">업비트 데이터를 불러오는 중입니다.</p>
+            <p className="text-xs text-gray-400 mt-1">1분 캔들 15개와 일 캔들 7개를 기준으로 계산합니다.</p>
           </div>
-        </div>
+        )}
+
+        {error && !isLoading && (
+          <div className="mx-4 mt-3 rounded-2xl bg-red-50 border border-red-100 p-4">
+            <p className="text-sm font-bold text-red-600">데이터를 불러오지 못했습니다.</p>
+            <p className="text-xs text-red-500 mt-1">{error}</p>
+            <button
+              type="button"
+              onClick={loadAnalysis}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 bg-white"
+            >
+              <RefreshCw size={13} /> 다시 시도
+            </button>
+          </div>
+        )}
+
+        {/* AI Analysis */}
+        {analysis && (
+          <div className="mx-4 mt-3 rounded-2xl bg-gray-50 border border-gray-100 p-4">
+            <p
+              className="text-[10px] font-bold uppercase tracking-widest mb-3"
+              style={{ color: BLUE }}
+            >
+              AI 분석 결과
+            </p>
+            <div className="space-y-2.5">
+              {analysis.aiAnalysis.map((line, i) => (
+                <p key={i} className="text-sm text-gray-700 leading-relaxed">
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Accordion */}
-        <div className="mx-4 mt-3 space-y-2">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-xl border border-gray-100 overflow-hidden bg-white"
-            >
-              <button
-                className="w-full flex items-center gap-2.5 px-4 py-3.5"
-                onClick={() => setOpenId(openId === item.id ? null : item.id)}
+        {items.length > 0 && (
+          <div className="mx-4 mt-3 space-y-2">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-xl border border-gray-100 overflow-hidden bg-white"
               >
-                <span style={{ color: BLUE, opacity: 0.7 }}>{item.icon}</span>
-                <span className="text-sm font-medium text-gray-700 flex-1 text-left">
-                  {item.label}
-                </span>
-                <span
-                  className="text-sm font-bold mr-2"
-                  style={{ color: item.up ? "#ef4444" : "#2563eb" }}
+                <button
+                  className="w-full flex items-center gap-2.5 px-4 py-3.5"
+                  onClick={() => setOpenId(openId === item.id ? null : item.id)}
                 >
-                  {item.value}
-                </span>
-                {openId === item.id ? (
-                  <ChevronUp size={15} className="text-gray-400" />
-                ) : (
-                  <ChevronDown size={15} className="text-gray-400" />
+                  <span style={{ color: BLUE, opacity: 0.7 }}>{item.icon}</span>
+                  <span className="text-sm font-medium text-gray-700 flex-1 text-left">
+                    {item.label}
+                  </span>
+                  <span
+                    className="text-sm font-bold mr-2"
+                    style={{ color: item.up ? "#ef4444" : "#2563eb" }}
+                  >
+                    {item.value}
+                  </span>
+                  <span className="text-[11px] font-bold text-gray-400 mr-1">+{item.score}</span>
+                  {openId === item.id ? (
+                    <ChevronUp size={15} className="text-gray-400" />
+                  ) : (
+                    <ChevronDown size={15} className="text-gray-400" />
+                  )}
+                </button>
+                {openId === item.id && (
+                  <div className="px-4 pb-3.5 pt-0 bg-gray-50 border-t border-gray-100 text-sm text-gray-600 leading-relaxed">
+                    {item.detail}
+                  </div>
                 )}
-              </button>
-              {openId === item.id && (
-                <div className="px-4 pb-3.5 pt-0 bg-gray-50 border-t border-gray-100 text-sm text-gray-600 leading-relaxed">
-                  {item.detail}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Sticky CTA */}
@@ -207,7 +201,7 @@ export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () 
           className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-md active:scale-[0.98] transition-transform"
           style={{ background: BLUE }}
         >
-          최종 결정하기 →
+          확인 후 계속 진행
         </button>
       </div>
     </div>

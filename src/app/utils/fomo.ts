@@ -25,14 +25,14 @@ export function calcFomo(symbol: Coin) {
 }
 
 export function fomoMeta(score: number) {
-  if (score >= 70) {
-    return { emoji: "😱", label: "매우 위험", color: "#ef4444", bg: "#fef2f2" };
+  if (score >= 80) {
+    return { emoji: "😱", label: "매우 높음", color: "#ef4444", bg: "#fef2f2" };
   }
-  if (score >= 50) {
-    return { emoji: "😰", label: "위험", color: "#f97316", bg: "#fff7ed" };
+  if (score >= 60) {
+    return { emoji: "😰", label: "높음", color: "#f97316", bg: "#fff7ed" };
   }
   if (score >= 30) {
     return { emoji: "😕", label: "주의", color: "#ca8a04", bg: "#fefce8" };
   }
-  return { emoji: "😌", label: "안전", color: "#16a34a", bg: "#f0fdf4" };
+  return { emoji: "😌", label: "낮음", color: "#16a34a", bg: "#f0fdf4" };
 }
