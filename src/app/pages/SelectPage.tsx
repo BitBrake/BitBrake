@@ -71,7 +71,6 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
       <div style={{ background: BLUE }} className="px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-white font-bold text-base">BitBrake</span>
-          <span className="text-white/60 text-xs">주문하기</span>
         </div>
         <div className="flex items-center gap-2 mt-2">
           <CoinBadge symbol={coin} size={22} />
@@ -127,7 +126,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
 
       <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-3 pb-6">
         <div>
-          <label className="text-xs font-semibold text-gray-400 block mb-1.5">상품 선택</label>
+          <label className="text-xs font-semibold text-gray-400 block mb-1.5">종목 선택</label>
           <button
             onClick={() => setShowCoinSheet(true)}
             className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border text-sm"
