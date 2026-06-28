@@ -60,6 +60,23 @@ function getMockNewsSentiment(symbol: string) {
   return MOCK_NEWS_SENTIMENTS[seed % MOCK_NEWS_SENTIMENTS.length];
 }
 
+function formatAiLines(summary: string | null, fallback: string[]) {
+  if (!summary) return fallback;
+
+  const lines = summary
+    .split(/\n+/)
+    .map((line) =>
+      line
+        .replace(/\*\*/g, "")
+        .replace(/^#+\s*/, "")
+        .replace(/^[-*]\s*/, "")
+        .trim()
+    )
+    .filter(Boolean);
+
+  return lines.length > 0 ? lines : fallback;
+}
+
 export default function AnalysisPage({
   asset,
   onScoreChange,
@@ -237,7 +254,7 @@ export default function AnalysisPage({
               </div>
             ) : (
               <div className="space-y-2.5">
-                {(aiSummary ? aiSummary.split(/\n+/).filter(Boolean) : analysis.aiAnalysis).map((line, i) => (
+                {formatAiLines(aiSummary, analysis.aiAnalysis).map((line, i) => (
                 <p key={i} className="text-sm text-gray-700 leading-relaxed">
                   {line}
                 </p>
