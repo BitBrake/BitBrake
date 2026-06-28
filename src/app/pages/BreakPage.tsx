@@ -46,6 +46,7 @@ export default function BreakPage({
   const [selectedMarketCode, setSelectedMarketCode] = useState(asset.marketCode);
   const [upbitMarkets, setUpbitMarkets] = useState<UpbitMarket[]>([]);
   const [showAssetSheet, setShowAssetSheet] = useState(false);
+  const [assetSearch, setAssetSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,6 +103,20 @@ export default function BreakPage({
     };
   }, [asset, availableAssets, selectedMarketCode, upbitMarkets]);
 
+  const filteredAssets = useMemo(() => {
+    const keyword = assetSearch.trim().toLowerCase();
+    if (!keyword) return availableAssets;
+
+    return availableAssets.filter((item) => {
+      return (
+        item.name.toLowerCase().includes(keyword) ||
+        item.symbol.toLowerCase().includes(keyword) ||
+        item.marketCode.toLowerCase().includes(keyword) ||
+        item.englishName.toLowerCase().includes(keyword)
+      );
+    });
+  }, [assetSearch, availableAssets]);
+
   const handleMarketChange = (nextMarket: Market) => {
     const nextAssets = upbitMarkets
       .filter((item) => item.market.startsWith(`${nextMarket}-`))
@@ -154,7 +169,6 @@ export default function BreakPage({
         </div>
 
         <div className="mt-7 w-full border border-gray-100 bg-gray-50 p-4">
-          <label className="mb-2 block text-xs font-semibold text-gray-400">마켓 선택</label>
           <div className="flex bg-white p-1 border border-gray-100">
             {MARKET_LIST.map((item) => (
               <button
@@ -176,7 +190,10 @@ export default function BreakPage({
           <label className="mt-4 mb-2 block text-xs font-semibold text-gray-400">종목 선택</label>
           <button
             type="button"
-            onClick={() => setShowAssetSheet(true)}
+            onClick={() => {
+              setAssetSearch("");
+              setShowAssetSheet(true);
+            }}
             className="flex w-full items-center justify-between border border-gray-200 bg-white px-4 py-3.5 text-left"
             disabled={isLoading || availableAssets.length === 0}
           >
@@ -206,11 +223,19 @@ export default function BreakPage({
 
       {showAssetSheet && (
         <div className="absolute inset-0 z-50 flex flex-col justify-end" style={{ background: "rgba(0,0,0,0.45)" }}>
-          <div className="flex max-h-[72%] flex-col bg-white px-4 pt-4 pb-8">
+          <div className="flex h-[72%] flex-col bg-white px-4 pt-4 pb-8">
             <div className="mx-auto mb-4 h-1 w-10 bg-gray-200" />
             <p className="mb-3 flex-shrink-0 text-sm font-bold text-gray-800">종목 선택</p>
+            <input
+              type="search"
+              value={assetSearch}
+              onChange={(event) => setAssetSearch(event.target.value)}
+              placeholder="종목명 또는 코드 검색"
+              className="mb-3 w-full flex-shrink-0 border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-400"
+              autoFocus
+            />
             <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-              {availableAssets.map((item) => (
+              {filteredAssets.map((item) => (
                 <button
                   key={item.marketCode}
                   type="button"
@@ -231,6 +256,9 @@ export default function BreakPage({
                   )}
                 </button>
               ))}
+              {filteredAssets.length === 0 && (
+                <div className="py-8 text-center text-sm text-gray-400">일치하는 종목이 없습니다.</div>
+              )}
             </div>
             <button
               type="button"
