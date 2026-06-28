@@ -5,12 +5,14 @@ import AnalysisPage from "./pages/AnalysisPage";
 import DecisionPage from "./pages/DecisionPage";
 import type { Coin, Market, Page } from "./types";
 
+const BREAK_SECONDS = 10;
+
 export default function App() {
   const [page, setPage] = useState<Page>("select");
   const [coin, setCoin] = useState<Coin>("BTC");
   const [fomoScore, setFomoScore] = useState(0);
   const [currentPrice, setCurrentPrice] = useState(0);
-  const [countdown, setCountdown] = useState(20);
+  const [countdown, setCountdown] = useState(BREAK_SECONDS);
   const market: Market = "KRW";
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function App() {
     setCoin(c);
     setFomoScore(0);
     setCurrentPrice(0);
-    setCountdown(20);
+    setCountdown(BREAK_SECONDS);
     setPage("break");
   }
 
