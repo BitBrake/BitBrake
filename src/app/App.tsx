@@ -27,7 +27,12 @@ export default function App() {
     <main className="relative h-screen w-screen overflow-hidden bg-white">
       {page === "break" && <BreakPage asset={asset} onAnalyze={handleAnalyze} />}
       {page === "analysis" && (
-        <AnalysisPage asset={asset} onScoreChange={setFomoScore} onPriceChange={setCurrentPrice} />
+        <AnalysisPage
+          asset={asset}
+          onBack={() => setPage("break")}
+          onScoreChange={setFomoScore}
+          onPriceChange={setCurrentPrice}
+        />
       )}
     </main>
   );

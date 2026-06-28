@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import {
   Activity,
   AlertTriangle,
+  ArrowLeft,
   BarChart2,
   ChevronDown,
   ChevronUp,
@@ -60,12 +61,31 @@ function getMockNewsSentiment(symbol: string) {
   return MOCK_NEWS_SENTIMENTS[seed % MOCK_NEWS_SENTIMENTS.length];
 }
 
+function formatAiLines(summary: string | null, fallback: string[]) {
+  if (!summary) return fallback;
+
+  const lines = summary
+    .split(/\n+/)
+    .map((line) =>
+      line
+        .replace(/\*\*/g, "")
+        .replace(/^#+\s*/, "")
+        .replace(/^[-*]\s*/, "")
+        .trim()
+    )
+    .filter(Boolean);
+
+  return lines.length > 0 ? lines : fallback;
+}
+
 export default function AnalysisPage({
   asset,
+  onBack,
   onScoreChange,
   onPriceChange,
 }: {
   asset: SelectedAsset;
+  onBack: () => void;
   onScoreChange: (score: number) => void;
   onPriceChange: (price: number) => void;
 }) {
@@ -143,6 +163,14 @@ export default function AnalysisPage({
     <div className="relative flex flex-col h-full bg-white" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
       {/* Header */}
       <div style={{ background: BLUE }} className="px-4 py-3 flex items-center flex-shrink-0">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mr-3 flex h-9 w-9 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/10 active:bg-white/15"
+          aria-label="브레이크 화면으로 돌아가기"
+        >
+          <ArrowLeft size={20} />
+        </button>
         <div className="flex-1">
           <p className="text-white font-bold text-base">{asset.name} 분석</p>
           <p className="text-white/60 text-[11px]">
@@ -237,7 +265,7 @@ export default function AnalysisPage({
               </div>
             ) : (
               <div className="space-y-2.5">
-                {(aiSummary ? aiSummary.split(/\n+/).filter(Boolean) : analysis.aiAnalysis).map((line, i) => (
+                {formatAiLines(aiSummary, analysis.aiAnalysis).map((line, i) => (
                 <p key={i} className="text-sm text-gray-700 leading-relaxed">
                   {line}
                 </p>

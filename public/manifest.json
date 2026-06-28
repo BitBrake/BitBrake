@@ -8,7 +8,8 @@
     "https://upbit.com/*",
     "https://*.upbit.com/*",
     "https://api.upbit.com/*",
-    "wss://api.upbit.com/*"
+    "wss://api.upbit.com/*",
+    "https://bitbrake.vercel.app/*"
   ],
   "action": {
     "default_title": "BitBrake 열기"
