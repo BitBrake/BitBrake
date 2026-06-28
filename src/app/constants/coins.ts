@@ -163,4 +163,4 @@ export const COINS: Record<Coin, CoinInfo> = {
   },
 };
 
-export const ORDER_TYPES: OrderType[] = ["지정가", "시장가", "예약-지정가"];
+export const ORDER_TYPES: OrderType[] = ["시장가", "지정가", "예약-지정가"];

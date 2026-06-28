@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Check, ChevronDown } from "lucide-react";
+import { toUpbitCode } from "../api/upbit";
 import CoinBadge from "../components/CoinBadge";
-import { BLUE, COINS, MARKET_LIST, ORDER_TYPES } from "../constants/coins";
+import { BLUE, COIN_LIST, COINS, MARKET_LIST, ORDER_TYPES } from "../constants/coins";
+import { useUpbitTickers } from "../hooks/useUpbitTickers";
 import { fmtMarketPrice, getCoinPrice, getMarketCoins } from "../utils/format";
 import type { Coin, Market, OrderSide, OrderType } from "../types";
 
@@ -17,29 +19,49 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   const [qtyInput, setQtyInput] = useState("");
   const [qtyError, setQtyError] = useState(false);
 
+  const { tickers } = useUpbitTickers(market, COIN_LIST);
+
   const isBuy = side === "매수";
   const accentColor = isBuy ? "#ef4444" : "#2563eb";
   const availableCoins = getMarketCoins(market);
-  const currentPrice = getCoinPrice(coin, market);
+  const currentTicker = tickers[toUpbitCode(market, coin)];
+  const currentPrice = currentTicker?.tradePrice ?? getCoinPrice(coin, market);
+  const currentChange = currentTicker?.changeRate ?? COINS[coin].change24h;
+
+  useEffect(() => {
+    if (orderType === "시장가") {
+      setPriceInput(fmtMarketPrice(currentPrice, market));
+    }
+  }, [currentPrice, market, orderType]);
+
+  const getDisplayPrice = (symbol: Coin, targetMarket = market) => {
+    return tickers[toUpbitCode(targetMarket, symbol)]?.tradePrice ?? getCoinPrice(symbol, targetMarket);
+  };
+
+  const getDisplayChange = (symbol: Coin, targetMarket = market) => {
+    return tickers[toUpbitCode(targetMarket, symbol)]?.changeRate ?? COINS[symbol].change24h;
+  };
 
   const handleMarketChange = (nextMarket: Market) => {
     setMarket(nextMarket);
     const nextCoins = getMarketCoins(nextMarket);
     const nextCoin = COINS[coin].markets.includes(nextMarket) ? coin : nextCoins[0];
     setCoin(nextCoin);
-    setPriceInput(fmtMarketPrice(getCoinPrice(nextCoin, nextMarket), nextMarket));
+    setPriceInput(fmtMarketPrice(getDisplayPrice(nextCoin, nextMarket), nextMarket));
     setQtyInput("");
   };
 
   const handleCoinChange = (nextCoin: Coin) => {
     setCoin(nextCoin);
-    setPriceInput(fmtMarketPrice(getCoinPrice(nextCoin, market), market));
+    setPriceInput(fmtMarketPrice(getDisplayPrice(nextCoin), market));
     setShowCoinSheet(false);
   };
 
   const handleTypeChange = (nextType: OrderType) => {
     setOrderType(nextType);
-    setPriceInput(fmtMarketPrice(currentPrice, market));
+    if (nextType === "시장가") {
+      setPriceInput(fmtMarketPrice(currentPrice, market));
+    }
     setShowTypeSheet(false);
   };
 
@@ -78,13 +100,13 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
           <span className="text-white/70 text-xs">{market}-{coin}</span>
           <span
             className="ml-auto font-bold text-sm"
-            style={{ color: COINS[coin].change24h >= 0 ? "#fca5a5" : "#93c5fd", fontFamily: "Inter, sans-serif" }}
+            style={{ color: currentChange >= 0 ? "#fca5a5" : "#93c5fd", fontFamily: "Inter, sans-serif" }}
           >
             {fmtMarketPrice(currentPrice, market)}
           </span>
-          <span className="text-xs font-medium" style={{ color: COINS[coin].change24h >= 0 ? "#fca5a5" : "#93c5fd" }}>
-            {COINS[coin].change24h >= 0 ? "▲" : "▼"}
-            {Math.abs(COINS[coin].change24h).toFixed(2)}%
+          <span className="text-xs font-medium" style={{ color: currentChange >= 0 ? "#fca5a5" : "#93c5fd" }}>
+            {currentChange >= 0 ? "+" : "-"}
+            {Math.abs(currentChange).toFixed(2)}%
           </span>
         </div>
       </div>
@@ -153,9 +175,9 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
             <span className="font-semibold text-gray-900">{orderType}</span>
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-gray-400">
-                {orderType === "지정가" && "원하는 가격 직접 설정"}
+                {orderType === "지정가" && "원하는 가격을 직접 설정"}
                 {orderType === "시장가" && "현재 시세로 즉시 체결"}
-                {orderType === "예약-지정가" && "조건 충족시 자동 주문"}
+                {orderType === "예약-지정가" && "조건 충족 시 자동 주문"}
               </span>
               <ChevronDown size={16} className="text-gray-400" />
             </div>
@@ -245,16 +267,16 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-gray-400">주문 총액</span>
             <span className="text-lg font-extrabold" style={{ color: accentColor, fontFamily: "Inter, sans-serif" }}>
-              {total > 0 ? fmtMarketPrice(total, market) : "—"}
+              {total > 0 ? fmtMarketPrice(total, market) : "0"}
               <span className="text-sm font-normal text-gray-400 ml-1">{market}</span>
             </span>
           </div>
           <div className="flex justify-between text-[11px] text-gray-400">
             <span>
-              단가 {fmtMarketPrice(rawPrice || currentPrice, market)} {market}
+              가격 {fmtMarketPrice(rawPrice || currentPrice, market)} {market}
             </span>
             <span>
-              × {rawQty > 0 ? rawQty : "0"} {coin}
+              수량 {rawQty > 0 ? rawQty : "0"} {coin}
             </span>
           </div>
         </div>
@@ -266,7 +288,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
           className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-md active:scale-[0.98] transition-transform"
           style={{ background: accentColor }}
         >
-          확인 — {isBuy ? "매수" : "매도"} 주문 검토하기
+          확인 후 {isBuy ? "매수" : "매도"} 주문 검토하기
         </button>
         <p className="text-center text-[11px] text-gray-400 mt-2">
           주문 전 20초 브레이크 타임이 시작됩니다
@@ -283,22 +305,36 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
             <p className="text-sm font-bold text-gray-800 mb-3 flex-shrink-0">종목 선택</p>
             <div className="overflow-y-auto pr-1 flex-1 min-h-0">
-              {availableCoins.map((item) => (
-                <button
-                  key={item}
-                  onClick={() => handleCoinChange(item)}
-                  className="w-full flex items-center gap-3 py-3.5 border-b border-gray-50"
-                >
-                  <CoinBadge symbol={item} size={36} />
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-semibold text-gray-900">{COINS[item].name}</p>
-                    <p className="text-xs text-gray-400">
-                      {market}-{item} · {fmtMarketPrice(getCoinPrice(item, market), market)} {market}
-                    </p>
-                  </div>
-                  {coin === item && <Check size={16} style={{ color: BLUE }} />}
-                </button>
-              ))}
+              {availableCoins.map((item) => {
+                const itemPrice = getDisplayPrice(item);
+                const itemChange = getDisplayChange(item);
+
+                return (
+                  <button
+                    key={item}
+                    onClick={() => handleCoinChange(item)}
+                    className="w-full flex items-center gap-3 py-3.5 border-b border-gray-50"
+                  >
+                    <CoinBadge symbol={item} size={36} />
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-semibold text-gray-900">{COINS[item].name}</p>
+                      <p className="text-xs text-gray-400">
+                        {market}-{item} · {fmtMarketPrice(itemPrice, market)} {market}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className="text-xs font-bold"
+                        style={{ color: itemChange >= 0 ? "#ef4444" : "#2563eb" }}
+                      >
+                        {itemChange >= 0 ? "+" : "-"}
+                        {Math.abs(itemChange).toFixed(2)}%
+                      </p>
+                      {coin === item && <Check size={16} style={{ color: BLUE }} className="ml-auto mt-1" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
             <button
               onClick={() => setShowCoinSheet(false)}
