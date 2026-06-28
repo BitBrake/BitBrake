@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Activity, AlertTriangle, BarChart2, ChevronDown, ChevronUp, RefreshCw, Zap } from "lucide-react";
+import { fetchGeminiSummary } from "../api/gemini";
 import { fetchMarketAnalysis, type MarketAnalysis } from "../api/upbit";
 import CoinBadge from "../components/CoinBadge";
 import { BLUE } from "../constants/coins";
@@ -21,24 +22,50 @@ export default function AnalysisPage({
   const [openId, setOpenId] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const score = analysis?.fomoScore ?? 0;
   const meta = fomoMeta(score);
 
   const loadAnalysis = async () => {
     setIsLoading(true);
+    setIsAiLoading(false);
+    setAiSummary(null);
+    setAiError(null);
     setError(null);
     try {
       const data = await fetchMarketAnalysis(asset.marketCode, asset.market, asset.name, asset.symbol);
       setAnalysis(data);
       onScoreChange(data.fomoScore);
       onPriceChange(data.currentPrice);
+      setIsLoading(false);
+
+      setIsAiLoading(true);
+      try {
+        const summary = await fetchGeminiSummary({
+          marketName: asset.name,
+          currentPrice: data.currentPrice,
+          shortTermChangeRate: data.shortTermChangeRate,
+          volumeSpikeRate: data.volumeSpikeRate,
+          volatilityRate: data.volatilityRate,
+          dailyChangeRate: data.dailyChangeRate,
+          fomoScore: data.fomoScore,
+          fomoLevel: data.fomoLevel,
+        });
+
+        setAiSummary(summary);
+      } catch (aiErr) {
+        setAiError(aiErr instanceof Error ? aiErr.message : "Gemini 분석 결과를 불러오지 못했습니다.");
+      } finally {
+        setIsAiLoading(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "분석 데이터를 불러오지 못했습니다.");
       setAnalysis(null);
       onScoreChange(0);
       onPriceChange(0);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -154,13 +181,25 @@ export default function AnalysisPage({
             >
               AI 분석 결과
             </p>
-            <div className="space-y-2.5">
-              {analysis.aiAnalysis.map((line, i) => (
+            {isAiLoading ? (
+              <div className="rounded-xl bg-white border border-gray-100 px-3 py-3">
+                <p className="text-sm font-semibold text-gray-700">Gemini가 분석 결과를 작성하는 중입니다.</p>
+                <p className="text-xs text-gray-400 mt-1">실제 업비트 데이터와 FOMO 점수를 바탕으로 요약합니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {(aiSummary ? aiSummary.split(/\n+/).filter(Boolean) : analysis.aiAnalysis).map((line, i) => (
                 <p key={i} className="text-sm text-gray-700 leading-relaxed">
                   {line}
                 </p>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+            {aiError && (
+              <p className="mt-3 text-[11px] text-gray-400">
+                Gemini 연결에 실패해 기본 분석을 표시했습니다.
+              </p>
+            )}
           </div>
         )}
 
