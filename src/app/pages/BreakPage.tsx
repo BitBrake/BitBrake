@@ -154,7 +154,6 @@ export default function BreakPage({
         </div>
 
         <div className="mt-7 w-full border border-gray-100 bg-gray-50 p-4">
-          <label className="mb-2 block text-xs font-semibold text-gray-400">마켓 선택</label>
           <div className="flex bg-white p-1 border border-gray-100">
             {MARKET_LIST.map((item) => (
               <button
