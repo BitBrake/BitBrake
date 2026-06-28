@@ -15,7 +15,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   const [showCoinSheet, setShowCoinSheet] = useState(false);
   const [orderType, setOrderType] = useState<OrderType>("지정가");
   const [showTypeSheet, setShowTypeSheet] = useState(false);
-  const [priceInput, setPriceInput] = useState(fmtMarketPrice(getCoinPrice("BTC", "KRW"), "KRW"));
+  const [priceInput, setPriceInput] = useState("");
   const [qtyInput, setQtyInput] = useState("");
   const [qtyError, setQtyError] = useState(false);
 
@@ -24,15 +24,17 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   const isBuy = side === "매수";
   const accentColor = isBuy ? "#ef4444" : "#2563eb";
   const availableCoins = getMarketCoins(market);
+  const isCurrentMarketSupported = COINS[coin].markets.includes(market);
   const currentTicker = tickers[toUpbitCode(market, coin)];
-  const currentPrice = currentTicker?.tradePrice ?? getCoinPrice(coin, market);
-  const currentChange = currentTicker?.changeRate ?? COINS[coin].change24h;
+  const currentPrice = currentTicker?.tradePrice ?? 0;
+  const currentChange = currentTicker?.changeRate;
 
   useEffect(() => {
-    if (orderType === "시장가") {
+    if (!currentPrice) return;
+    if (orderType === "시장가" || !priceInput) {
       setPriceInput(fmtMarketPrice(currentPrice, market));
     }
-  }, [currentPrice, market, orderType]);
+  }, [currentPrice, market, orderType, priceInput]);
 
   const getDisplayPrice = (symbol: Coin, targetMarket = market) => {
     return tickers[toUpbitCode(targetMarket, symbol)]?.tradePrice ?? getCoinPrice(symbol, targetMarket);
@@ -43,18 +45,22 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   };
 
   const handleMarketChange = (nextMarket: Market) => {
-    const nextCoins = getMarketCoins(nextMarket);
-    const nextCoin = COINS[coin].markets.includes(nextMarket) ? coin : nextCoins[0];
-
     setMarket(nextMarket);
-    setCoin(nextCoin);
-    setPriceInput(fmtMarketPrice(getDisplayPrice(nextCoin, nextMarket), nextMarket));
+    if (!COINS[coin].markets.includes(nextMarket)) {
+      setPriceInput("");
+      setQtyInput("");
+      return;
+    }
+
+    const nextTickerPrice = tickers[toUpbitCode(nextMarket, coin)]?.tradePrice;
+    setPriceInput(nextTickerPrice ? fmtMarketPrice(nextTickerPrice, nextMarket) : "");
     setQtyInput("");
   };
 
   const handleCoinChange = (nextCoin: Coin) => {
     setCoin(nextCoin);
-    setPriceInput(fmtMarketPrice(getDisplayPrice(nextCoin), market));
+    const nextTickerPrice = tickers[toUpbitCode(market, nextCoin)]?.tradePrice;
+    setPriceInput(nextTickerPrice ? fmtMarketPrice(nextTickerPrice, market) : "");
     setQtyInput("");
     setShowCoinSheet(false);
   };
@@ -82,6 +88,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
   };
 
   const handleSubmit = () => {
+    if (!isCurrentMarketSupported) return;
     if (!qtyInput || rawQty <= 0) {
       setQtyError(true);
       setTimeout(() => setQtyError(false), 1200);
@@ -102,35 +109,59 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
           <span className="text-white/70 text-xs">{market}-{coin}</span>
           <span
             className="ml-auto font-bold text-sm"
-            style={{ color: currentChange >= 0 ? "#fca5a5" : "#93c5fd", fontFamily: "Inter, sans-serif" }}
+            style={{
+              color: currentChange === undefined ? "rgba(255,255,255,0.65)" : currentChange >= 0 ? "#fca5a5" : "#93c5fd",
+              fontFamily: "Inter, sans-serif",
+            }}
           >
-            {fmtMarketPrice(currentPrice, market)}
+            {currentPrice > 0 ? fmtMarketPrice(currentPrice, market) : "시세 확인 중"}
           </span>
-          <span className="text-xs font-medium" style={{ color: currentChange >= 0 ? "#fca5a5" : "#93c5fd" }}>
-            {currentChange >= 0 ? "+" : "-"}
-            {Math.abs(currentChange).toFixed(2)}%
-          </span>
+          {currentChange !== undefined && (
+            <span className="text-xs font-medium" style={{ color: currentChange >= 0 ? "#fca5a5" : "#93c5fd" }}>
+              {currentChange >= 0 ? "+" : "-"}
+              {Math.abs(currentChange).toFixed(2)}%
+            </span>
+          )}
         </div>
       </div>
 
       <div className="mx-4 mt-4 flex rounded-xl bg-gray-100 p-1 flex-shrink-0">
-        {MARKET_LIST.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => handleMarketChange(item)}
-            className="flex-1 rounded-lg py-2 text-xs font-bold transition-all"
-            style={
-              market === item
-                ? { background: "white", color: BLUE, boxShadow: "0 1px 4px rgba(15, 23, 42, 0.12)" }
-                : { color: "#9ca3af" }
-            }
-          >
-            {item === "KRW" ? "원화" : item}
-          </button>
-        ))}
+        {MARKET_LIST.map((item) => {
+          const isAvailable = COINS[coin].markets.includes(item);
+
+          return (
+            <button
+              key={item}
+              type="button"
+              onClick={() => handleMarketChange(item)}
+              className="flex-1 rounded-lg py-2 text-xs font-bold transition-all"
+              style={
+                market === item
+                  ? { background: "white", color: BLUE, boxShadow: "0 1px 4px rgba(15, 23, 42, 0.12)" }
+                  : { color: isAvailable ? "#9ca3af" : "#d1d5db" }
+              }
+            >
+              {item === "KRW" ? "원화" : item}
+            </button>
+          );
+        })}
       </div>
 
+      {!isCurrentMarketSupported ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+          <CoinBadge symbol={coin} size={54} />
+          <p className="mt-4 text-lg font-bold text-gray-900">{COINS[coin].name}</p>
+          <p className="mt-1 text-sm font-semibold text-gray-500">
+            {market}-{coin} 마켓은 지원하지 않습니다.
+          </p>
+          <p className="mt-3 text-sm text-gray-400 leading-relaxed">
+            이 종목은 현재 선택한 {market} 마켓에서 거래할 수 없어요.
+            <br />
+            위 탭에서 지원되는 마켓을 선택해 주세요.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="flex mx-4 mt-4 rounded-xl overflow-hidden border flex-shrink-0" style={{ borderColor: "#e5e7eb" }}>
         {(["매수", "매도"] as OrderSide[]).map((item) => (
           <button
@@ -191,7 +222,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
             {isBuy ? "매수 가격" : "매도 가격"}
           </label>
           <div
-            className="flex items-center px-4 py-3.5 rounded-xl border"
+            className="flex items-center pl-4 pr-16 py-3.5 rounded-xl border"
             style={{
               borderColor: orderType === "시장가" ? "#e5e7eb" : accentColor,
               borderWidth: orderType === "시장가" ? 1 : 1.5,
@@ -205,9 +236,9 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
               disabled={orderType === "시장가"}
               className="flex-1 text-sm font-semibold text-gray-900 outline-none bg-transparent"
               style={{ color: orderType === "시장가" ? "#9ca3af" : "#111827" }}
-              placeholder="가격 입력"
+              placeholder={currentPrice > 0 ? "가격 입력" : "시세 확인 중"}
             />
-            <span className="text-xs text-gray-400 ml-2 font-medium">{market}</span>
+            <span className="text-xs text-gray-400 ml-2 font-medium shrink-0">{market}</span>
           </div>
           {orderType !== "시장가" && (
             <div className="flex gap-2 mt-1.5">
@@ -216,6 +247,7 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
                   key={pct}
                   onClick={() => {
                     const base = rawPrice || currentPrice;
+                    if (!base) return;
                     setPriceInput(fmtMarketPrice(base * (1 + pct / 100), market));
                   }}
                   className="flex-1 py-1 rounded-lg text-[11px] font-semibold border"
@@ -254,7 +286,9 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
                 key={pct}
                 onClick={() => {
                   const budget = market === "KRW" ? 5000000 : market === "BTC" ? 0.05 : 5000;
-                  const qty = ((budget * pct) / 100) / (rawPrice || currentPrice);
+                  const basePrice = rawPrice || currentPrice;
+                  if (!basePrice) return;
+                  const qty = ((budget * pct) / 100) / basePrice;
                   setQtyInput(qty.toFixed(coin === "XRP" || coin === "DOGE" ? 0 : 6));
                 }}
                 className="flex-1 py-1 rounded-lg text-[11px] font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50"
@@ -296,6 +330,8 @@ export default function SelectPage({ onSelect }: { onSelect: (c: Coin) => void }
           주문 전 10초 브레이크 타임이 시작됩니다
         </p>
       </div>
+      </>
+      )}
 
       {showCoinSheet && (
         <div className="absolute inset-0 z-50 flex flex-col justify-end" style={{ background: "rgba(0,0,0,0.45)" }}>
