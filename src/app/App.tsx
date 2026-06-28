@@ -3,13 +3,15 @@ import SelectPage from "./pages/SelectPage";
 import BreakPage from "./pages/BreakPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import DecisionPage from "./pages/DecisionPage";
-import { calcFomo } from "./utils/fomo";
-import type { Coin, Page } from "./types";
+import type { Coin, Market, Page } from "./types";
 
 export default function App() {
   const [page, setPage] = useState<Page>("select");
   const [coin, setCoin] = useState<Coin>("BTC");
+  const [fomoScore, setFomoScore] = useState(0);
+  const [currentPrice, setCurrentPrice] = useState(0);
   const [countdown, setCountdown] = useState(20);
+  const market: Market = "KRW";
 
   useEffect(() => {
     if (page !== "break") return;
@@ -23,11 +25,11 @@ export default function App() {
 
   function handleSelect(c: Coin) {
     setCoin(c);
+    setFomoScore(0);
+    setCurrentPrice(0);
     setCountdown(20);
     setPage("break");
   }
-
-  const fomoScore = calcFomo(coin);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-200">
@@ -50,21 +52,26 @@ export default function App() {
             />
           )}
           {page === "analysis" && (
-            <AnalysisPage coin={coin} onNext={() => setPage("decision")} />
+            <AnalysisPage
+              coin={coin}
+              onScoreChange={setFomoScore}
+              onPriceChange={setCurrentPrice}
+              onNext={() => setPage("decision")}
+            />
           )}
           {page === "decision" && (
             <DecisionPage
               coin={coin}
+              market={market}
+              currentPrice={currentPrice}
               score={fomoScore}
               onBrake={() => {
                 setCoin("BTC");
                 setPage("select");
               }}
               onAccel={() => {
-                setTimeout(() => {
-                  setCoin("BTC");
-                  setPage("select");
-                }, 300);
+                setCoin("BTC");
+                setPage("select");
               }}
             />
           )}

@@ -7,7 +7,17 @@ import { BLUE, COINS } from "../constants/coins";
 import { fomoMeta } from "../utils/fomo";
 import type { Coin, Market } from "../types";
 
-export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () => void }) {
+export default function AnalysisPage({
+  coin,
+  onScoreChange,
+  onPriceChange,
+  onNext,
+}: {
+  coin: Coin;
+  onScoreChange: (score: number) => void;
+  onPriceChange: (price: number) => void;
+  onNext: () => void;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,9 +33,13 @@ export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () 
     try {
       const data = await fetchMarketAnalysis(coin, market, c.name);
       setAnalysis(data);
+      onScoreChange(data.fomoScore);
+      onPriceChange(data.currentPrice);
     } catch (err) {
       setError(err instanceof Error ? err.message : "분석 데이터를 불러오지 못했습니다.");
       setAnalysis(null);
+      onScoreChange(0);
+      onPriceChange(0);
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +91,7 @@ export default function AnalysisPage({ coin, onNext }: { coin: Coin; onNext: () 
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">
-                충동 매수 위험도
+                FOMO risk
               </p>
               <p className="text-2xl font-bold" style={{ color: meta.color }}>
                 {meta.emoji} {meta.label}
